@@ -115,10 +115,13 @@ for d, s in zip(phrasingTexts, phrasingSubscripts):
     #   italic(**): apply top accent (right border) 
     #
     # There are some parameters you can set:
+    #
     #           :root {
-    #               --accent-width: 123rem;
+    #               --accent-width: 123rem; 
     #               --accent-color: #000;
     #           }
+    #
+    # For more details and implementation, please check `./settings.css`
     #
     # To use this css style and syntax, type `{%hackmd @OrangeSagoCream/Accent %}` 
     # at the first line of your hackmd

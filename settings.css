@@ -1,0 +1,33 @@
+:root {
+    --accent-color: #b55; 
+    --accent-width: .2rem; /* width of the line */
+}
+
+b, 
+rt i {
+    border: solid 0 var(--accent-color);
+    border-top-width: var(--accent-width);
+    
+    font-weight: normal;
+    
+    &:has(em) {
+        border-right-width: var(--accent-width);
+    }
+    
+    &:not(b) {
+        color: #0000;
+        width: 100%;
+    }
+    
+    & em {
+        font-style: normal;
+    }
+}
+
+rt {
+    translate: 0 20%;
+}
+
+rt > * {
+    display: inline-block;
+}
