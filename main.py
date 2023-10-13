@@ -3,8 +3,13 @@ from bs4 import BeautifulSoup
 
 # Read in text that need to be processed
 openPath = './content.txt'
+
+print("Reading contents from", openPath, "...", end=' ')
+
 with open(openPath, "r") as f:
     inputs = f.read()
+
+print('Complete!')
 
 # Preprocess of input string, chunk it into the form that starts from kanji(漢字)
 # For example, we won't send the request like this:
@@ -17,6 +22,8 @@ with open(openPath, "r") as f:
 #
 # Then when we try to build back the original sentence, we can know what the kanji read
 # (It would be easier to trace than directly send the whole sentence)
+
+print("Start to parsing...", end=' ')
 
 # The range of unicode of kanji
 def char_is_kanji(c) -> bool:
@@ -31,7 +38,7 @@ numNewLine = 0
 for i in range(len(inputs)):
     state |= not char_is_kanji(inputs[i])
     # Slice
-    if (state == True and char_is_kanji(inputs[i])) or inputs[i] == '\n' or (i and inputs[i-1] in "。、？！…」/"): 
+    if (state == True and char_is_kanji(inputs[i])) or inputs[i] == '\n' or (i and inputs[i-1] in "。、？！…」/：；:;,."): 
         if all([t == '\n' for t in inputs[lastIndex:i]]):
             # There is an empty line
             indexes += [(-1, i)]
@@ -42,7 +49,6 @@ for i in range(len(inputs)):
         lastIndex = i
         state = False
 indexes += [(lastIndex, len(inputs))]
-print(indexes[-1])
 
 # Create the request to suzukikunn
 processedInputs = ''
@@ -50,6 +56,10 @@ for i, j in indexes:
     # ignore those newlines
     if i != -1:
         processedInputs += inputs[i:j] + '\n'
+
+print('Complete!')
+# print(processedInputs)
+print("Sending request 鈴木君 ...", end=' ')
 
 # URL to suzukikun(すずきくん)
 url = "https://www.gavo.t.u-tokyo.ac.jp/ojad/phrasing/index"
@@ -68,9 +78,14 @@ data = {
     "data[Phrasing][jeita]": "invisible"
 }
 
-# Send a POST and use Beautiful Soup to parse the received html file
-content = requests.post(url, data).text
-soup = BeautifulSoup(content, "html.parser")
+
+# Send a POST and receive the website html code
+website = requests.post(url, data).text
+
+print('Complete!')
+# use Beautiful Soup to parse the received html file
+print("Process received data...", end=' ')
+soup = BeautifulSoup(website, "html.parser")
 
 # Fetch the required tags, which are phrasing_text and phrasing_subscript 
 phrasingTexts = soup.findAll("div", attrs={"class": "phrasing_text"})
@@ -95,7 +110,7 @@ for d, s in zip(phrasingTexts, phrasingSubscripts):
         datas.append({'text': p.get_text(), 'accent': accent})
     datas = datas[:-1] # Extract last ''
     # Fill back those special signs
-    if sentence[-1] in "。、？！…」/":
+    if sentence[-1] in "。、？！…」/：；:;,.":
         datas.append({'text': sentence[-1], 'accent': 0})
 
     # Here is the syntax we use to mark those accent:
@@ -140,7 +155,7 @@ for d, s in zip(phrasingTexts, phrasingSubscripts):
                     result += t
             else:
                 if a:
-                    result += "{%s|<i>&emsp;</i>}" % t if a == 1 else "{%s|<i>*&emsp;*</i>}" % t
+                    result += "{%s|<i>&emsp;</i>}" % t if a == 1 else "{%s|<i>*&emsp;&emsp;*</i>}" % t
                 else:
                     result += t
         return result    
@@ -162,7 +177,6 @@ for d, s in zip(phrasingTexts, phrasingSubscripts):
 
     # Update to partialResults
     partialResults.append(partialResult)
-print(len(partialResults), len(indexes)-numNewLine, numNewLine)
 
 # cnt = 0
 # for i in range(len(indexes)):
@@ -174,22 +188,25 @@ print(len(partialResults), len(indexes)-numNewLine, numNewLine)
 #     print(partialResults[cnt])
 #     cnt += 1
 
-assert len(partialResults) == len(indexes)-numNewLine, "Length of indexes (len=%d) and partialResults (len=%d) are not aligned" % (len(indexes)-numNewLine, len(partialResults))
+print('Complete!')
+assert len(partialResults) == len(indexes)-numNewLine, \
+        "Length of indexes (len=%d) and partialResults (len=%d) are not aligned" % \
+        (len(indexes)-numNewLine, len(partialResults))
 
 # Apply those partialResults back to inputs
 result = inputs
-cnt = 0
-for t in range(len(indexes)-1, 0, -1): # Update backward
+cnt = len(partialResults)-1
+for t in range(len(indexes)-1, -1, -1): # Update backward
     i, j = indexes[t]
     if i == -1:
-        result = result [:j] + '\n\n' + result[j:]
+        result = result [:j] + '\n' + result[j:]
     else:
         result = result[:i] + partialResults[cnt] + result[j:]
-        cnt += 1
+        cnt -= 1
 
 # Write the result to the specified file
 writePath = './result.txt'
 with open(writePath, "w") as f:
     f.write(result)
 
-print("Translate Finish.")
+print("Finish translating.")
