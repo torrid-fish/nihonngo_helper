@@ -1,0 +1,5 @@
+bs4==0.0.1
+jaconv==0.3.4
+suji==0.1.0
+mecab-python3==1.0.8
+unidic-lite==1.0.8
